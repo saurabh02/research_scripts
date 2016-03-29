@@ -71,7 +71,7 @@ if __name__ == '__main__':
         x += 1
         if x % 1000 == 0:
             print x
-        structures.extend(Structure.from_dict(doc['structure']))
+        structures.extend([Structure.from_dict(doc['structure'])])
     print 'Number of extracted structures = {}'.format(len(structures))
     for s in structures:
         found = mpr.find_structure(s)
