@@ -79,7 +79,14 @@ if __name__ == '__main__':
     print 'Number of PF unique comps = {}'.format(len(pf_comps))
     mp_comps = mpr.query(criteria={}, properties=["pretty_formula"])
     print 'Number of MP comps = {}'.format(len(mp_comps))
-
+    for comp in mp_comps:
+        try:
+            mp_unique_comps.add(comp['pretty_formula'])
+        except Exception as e:
+            print e
+            print comp
+            continue
+    print 'Number of MP unique comps = {}'.format(len(mp_unique_comps))
     '''
     for s in structures:
         found = mpr.find_structure(s)
