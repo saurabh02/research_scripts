@@ -65,41 +65,29 @@ def job_is_submittable(job):
 
 
 if __name__ == '__main__':
-    structures = []
-    mp_structs = []
-    new_structures = []
+    pf_comps = set()
+    mp_comps = set()
+    mp_unique_comps = set()
     coll = db['pauling_file']
     x = 0
     for doc in coll.find({'structure': {'$exists': True}}).batch_size(75):
-        x += 1
-        if x % 1000 == 0:
-            print x
-        structures.extend([Structure.from_dict(doc['structure'])])
-    print 'Number of extracted structures = {}'.format(len(structures))
-    with open('PF_structures', 'w') as w:
-        pickle.dump(structures, w)
-    num_found = 0
-    num_new = 0
+        if doc['metadata']['_structure']['is_ordered']:
+            x += 1
+            if x % 1000 == 0:
+                print x
+            pf_comps.add(doc['metadata']['_structure']['reduced_cell_formula'])
+    print 'Number of PF unique comps = {}'.format(len(pf_comps))
+    mp_comps = mpr.query(criteria={}, properties=["pretty_formula"])
+    print 'Number of MP comps = {}'.format(len(mp_comps))
+
+    '''
     for s in structures:
         found = mpr.find_structure(s)
+        print found
         if len(found) > 0:
             mp_structs.extend(found)
-            num_found += 1
-            if num_found % 100 == 0:
-                print num_found
         else:
             new_structures.append(s)
-            num_new += 1
-            if num_new % 100 == 0:
-                print num_new
-    if len(mp_structs) > 0:
-        print("Number of filtered out structures already on MP: {}".format(len(mp_structs)))
-    if len(new_structures) > 0:
-        print("Number of new structures: {}".format(len(mp_structs)))
-    with open('mp_structs', 'w') as w:
-        pickle.dump(mp_structs, w)
-    with open('new_structs', 'w') as w:
-        pickle.dump(new_structures, w)
     num_subm = 0
     submittables = []
     for s in new_structures:
@@ -111,4 +99,4 @@ if __name__ == '__main__':
     print("Number of new submittable structures: {}".format(len(submittables)))
     with open('submittables', 'w') as w:
         pickle.dump(submittables, w)
-
+    '''
