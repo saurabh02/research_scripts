@@ -65,7 +65,7 @@ def job_is_submittable(job):
 
 
 if __name__ == '__main__':
-    pf_comps = set()
+    pf_unique_comps = set()
     mp_comps = set()
     mp_unique_comps = set()
     coll = db['pauling_file']
@@ -75,18 +75,15 @@ if __name__ == '__main__':
             x += 1
             if x % 1000 == 0:
                 print x
-            pf_comps.add(doc['metadata']['_structure']['reduced_cell_formula'])
-    print 'Number of PF unique comps = {}'.format(len(pf_comps))
+            pf_unique_comps.add(doc['metadata']['_structure']['reduced_cell_formula'])
+    print 'Number of PF unique comps = {}'.format(len(pf_unique_comps))
     mp_comps = mpr.query(criteria={}, properties=["pretty_formula"])
     print 'Number of MP comps = {}'.format(len(mp_comps))
     for comp in mp_comps:
-        try:
             mp_unique_comps.add(comp['pretty_formula'])
-        except Exception as e:
-            print e
-            print comp
-            continue
     print 'Number of MP unique comps = {}'.format(len(mp_unique_comps))
+    new_comps = pf_unique_comps.difference(mp_unique_comps)
+    print 'Number of new compositions in PF = {}'.format(len(new_comps))
     '''
     for s in structures:
         found = mpr.find_structure(s)
