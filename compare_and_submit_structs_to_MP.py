@@ -79,7 +79,7 @@ if __name__ == '__main__':
     mp_comps = mpr.query(criteria={}, properties=["pretty_formula"])
     print 'Number of MP comps = {}'.format(len(mp_comps))
     for mp_comp in mp_comps:
-            mp_unique_comps.add(Composition(mp_comp['pretty_formula']).alphabetical_formula)
+        mp_unique_comps.add(Composition(mp_comp['pretty_formula']).alphabetical_formula)
     print 'Number of MP unique comps = {}'.format(len(mp_unique_comps))
     new_comps = pf_unique_comps.difference(mp_unique_comps)
     print 'Number of new compositions in PF = {}'.format(len(new_comps))
