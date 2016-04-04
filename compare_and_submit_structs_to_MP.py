@@ -1,7 +1,6 @@
 import pymongo
-from pymatgen import Structure, MPRester, Composition
+from pymatgen import MPRester, Composition
 from pymatgen.matproj.snl import StructureNL
-import pickle
 
 client = pymongo.MongoClient()
 db = client.springer
@@ -75,12 +74,12 @@ if __name__ == '__main__':
             x += 1
             if x % 1000 == 0:
                 print x
-            pf_unique_comps.add(doc['metadata']['_structure']['reduced_cell_formula'])
+            pf_unique_comps.add(doc['metadata']['_structure']['reduced_cell_formula_abc'])
     print 'Number of PF unique comps = {}'.format(len(pf_unique_comps))
     mp_comps = mpr.query(criteria={}, properties=["pretty_formula"])
     print 'Number of MP comps = {}'.format(len(mp_comps))
-    for comp in mp_comps:
-            mp_unique_comps.add(comp['pretty_formula'])
+    for mp_comp in mp_comps:
+            mp_unique_comps.add(Composition(mp_comp['pretty_formula']).alphabetical_formula)
     print 'Number of MP unique comps = {}'.format(len(mp_unique_comps))
     new_comps = pf_unique_comps.difference(mp_unique_comps)
     print 'Number of new compositions in PF = {}'.format(len(new_comps))
