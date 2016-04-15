@@ -1,5 +1,6 @@
 import pymongo
-from pymatgen import MPRester, Composition
+import json
+from pymatgen import MPRester, Composition, Structure
 from pymatgen.matproj.snl import StructureNL
 
 client = pymongo.MongoClient()
@@ -40,6 +41,17 @@ def structure_to_mock_job(structure):
     return job
 
 
+def doc_to_snl(doc):
+    return StructureNL(Structure.from_dict(doc['structure']), [{"name": "Saurabh Bajaj", "email": "sbajaj@lbl.gov"},
+                                                               {"name": "Anubhav Jain", "email": "ajain@lbl.gov"}], [],
+                       '', ['Pauling file'], {'_pauling_file': {'key': doc['key'], 'cif_link': doc['cif_link'],
+                                                                'geninfo': doc['metadata']['_Springer']['geninfo'],
+                                                                'expdetails': doc['metadata']['_Springer'][
+                                                                    'expdetails'],
+                                                                'title': doc['metadata']['_Springer']['title']}},
+                       [{'name': 'Pauling file', 'url': doc['webpage_link'], 'description': {'key': doc['key']}}])
+
+
 def job_is_submittable(job):
     snl = StructureNL.from_dict(job)
     # mpworks.processors.process_submissions.SubmissionProcessor#submit_new_workflow
@@ -65,6 +77,7 @@ def job_is_submittable(job):
 
 if __name__ == '__main__':
     pf_unique_comps = set()
+    pf_unique_comps_structs = []
     mp_comps = set()
     mp_unique_comps = set()
     coll = db['pauling_file']
@@ -72,10 +85,16 @@ if __name__ == '__main__':
     for doc in coll.find({'structure': {'$exists': True}}).batch_size(75):
         if doc['metadata']['_structure']['is_ordered']:
             x += 1
-            if x % 1000 == 0:
-                print x
+            # if x % 1000 == 0:
+            #     print x
+            if x > 1:
+                break
             pf_unique_comps.add(doc['metadata']['_structure']['reduced_cell_formula_abc'])
+            print doc_to_snl(doc).as_dict()
+            with open('PaulingFile_example.json', 'w') as outfile:
+                json.dump(doc_to_snl(doc).as_dict(), outfile)
     print 'Number of PF unique comps = {}'.format(len(pf_unique_comps))
+    '''
     mp_comps = mpr.query(criteria={}, properties=["pretty_formula"])
     print 'Number of MP comps = {}'.format(len(mp_comps))
     for mp_comp in mp_comps:
@@ -83,7 +102,6 @@ if __name__ == '__main__':
     print 'Number of MP unique comps = {}'.format(len(mp_unique_comps))
     new_comps = pf_unique_comps.difference(mp_unique_comps)
     print 'Number of new compositions in PF = {}'.format(len(new_comps))
-    '''
     for s in structures:
         found = mpr.find_structure(s)
         print found
