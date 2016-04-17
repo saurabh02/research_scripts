@@ -44,8 +44,16 @@ def structure_to_mock_job(structure):
 def doc_to_snl(doc):
     return StructureNL(Structure.from_dict(doc['structure']), [{"name": "Saurabh Bajaj", "email": "sbajaj@lbl.gov"},
                                                                {"name": "Anubhav Jain", "email": "ajain@lbl.gov"}], [],
-                       '', ['Pauling file'], {'_pauling_file': {'key': doc['key'], 'cif_link': doc['cif_link'],
-                                                                'geninfo': doc['metadata']['_Springer']['geninfo'],
+                       '', ['Pauling file'], {'_pauling_file': {'key': doc['key'],
+                                                                'reference': doc['metadata']['_Springer']['geninfo'][
+                                                                    'ref'], 'general_info': {
+                'Sample Detail(s)': doc['metadata']['_Springer']['geninfo']['Sample Detail(s)'],
+                'Standard Formula': doc['metadata']['_Springer']['geninfo']['Standard Formula'],
+                'Mineral Name(s)': doc['metadata']['_Springer']['geninfo']['Mineral Name(s)'],
+                'Phase Prototype': doc['metadata']['_Springer']['geninfo']['Phase Prototype'],
+                'Structure Class(es)': doc['metadata']['_Springer']['geninfo']['Structure Class(es)'],
+                'Measurement Detail(s)': doc['metadata']['_Springer']['geninfo']['Measurement Detail(s)'],
+                'Phase Label(s)': doc['metadata']['_Springer']['geninfo']['Phase Label(s)']},
                                                                 'expdetails': doc['metadata']['_Springer'][
                                                                     'expdetails'],
                                                                 'title': doc['metadata']['_Springer']['title']}},
