@@ -1,11 +1,27 @@
 import pymongo
-import json
 from pymatgen import MPRester, Composition, Structure
 from pymatgen.matproj.snl import StructureNL
 
 client = pymongo.MongoClient()
 db = client.springer
 mpr = MPRester()
+
+
+def create_mincoll():
+    origcoll = db['pauling_file']
+    min_collname = 'pauling_file_min'
+    db[min_collname].drop()
+    origcoll.aggregate([{'$match': {'structure': {'$exists': True}, 'metadata._structure.is_ordered': True,
+                                    'metadata._structure.is_valid': True}},
+                        {'$project': {'key': 1, 'metadata': 1, 'structure': 1, 'webpage_link': 1}},
+                        {'$out': min_collname}])
+    db[min_collname].create_index([('key', pymongo.ASCENDING)], unique=True)
+    # Remove Deuterium
+    for doc in db[min_collname].find().batch_size(75):
+        for el in doc['metadata']['_structure']['elements']:
+            if el == 'D':
+                db[min_collname].remove({'key': doc['key']})
+                break
 
 
 def get_meta_from_structure(structure):
@@ -84,32 +100,34 @@ def job_is_submittable(job):
 
 
 if __name__ == '__main__':
-    pf_unique_comps = set()
-    pf_unique_comps_structs = []
-    mp_comps = set()
+    create_mincoll()
     mp_unique_comps = set()
-    coll = db['pauling_file']
-    x = 0
-    for doc in coll.find({'structure': {'$exists': True}}).batch_size(75):
-        if doc['metadata']['_structure']['is_ordered']:
-            x += 1
-            # if x % 1000 == 0:
-            #     print x
-            if x > 1:
-                break
-            pf_unique_comps.add(doc['metadata']['_structure']['reduced_cell_formula_abc'])
-            print doc_to_snl(doc).as_dict()
-            with open('PaulingFile_example.json', 'w') as outfile:
-                json.dump(doc_to_snl(doc).as_dict(), outfile)
-    print 'Number of PF unique comps = {}'.format(len(pf_unique_comps))
-    '''
-    mp_comps = mpr.query(criteria={}, properties=["pretty_formula"])
-    print 'Number of MP comps = {}'.format(len(mp_comps))
+    pf_unique_comps = set()
+    coll = db['pauling_file_min']
+    new_coll = db['pf_to_mp']
+    new_coll.drop()
+    mp_comps = mpr.query(criteria={}, properties=["snl_final.reduced_cell_formula_abc"])
+    print 'Total number of MP comps = {}'.format(len(mp_comps))
     for mp_comp in mp_comps:
-        mp_unique_comps.add(Composition(mp_comp['pretty_formula']).alphabetical_formula)
-    print 'Number of MP unique comps = {}'.format(len(mp_unique_comps))
+        mp_unique_comps.add(mp_comp["snl_final.reduced_cell_formula_abc"])
+    print 'Number of unique MP comps = {}'.format(len(mp_unique_comps))
+    x = 0
+    for doc in coll.find().batch_size(75):
+        x += 1
+        if x % 1000 == 0:
+            print x
+        # if x > 1:
+        #     break
+        pf_unique_comps.add(doc['metadata']['_structure']['reduced_cell_formula_abc'])
+        if doc['metadata']['_structure']['reduced_cell_formula_abc'] not in mp_unique_comps:
+            new_coll.insert(doc)
+            # with open('PaulingFile_example.json', 'w') as outfile:
+            #     json.dump(doc_to_snl(doc).as_dict(), outfile)
+    new_coll.create_index([('key', pymongo.ASCENDING)], unique=True)
+    print 'Number of PF unique comps = {}'.format(len(pf_unique_comps))
     new_comps = pf_unique_comps.difference(mp_unique_comps)
     print 'Number of new compositions in PF = {}'.format(len(new_comps))
+    '''
     for s in structures:
         found = mpr.find_structure(s)
         print found
