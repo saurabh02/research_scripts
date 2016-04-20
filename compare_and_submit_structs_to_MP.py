@@ -9,7 +9,7 @@ mpr = MPRester()
 
 def create_mincoll():
     origcoll = db['pauling_file']
-    min_collname = 'pauling_file_min'
+    min_collname = 'pauling_file_mpmin'
     db[min_collname].drop()
     origcoll.aggregate([{'$match': {'structure': {'$exists': True}, 'metadata._structure.is_ordered': True,
                                     'metadata._structure.is_valid': True}},
@@ -100,10 +100,9 @@ def job_is_submittable(job):
 
 
 if __name__ == '__main__':
-    create_mincoll()
     mp_unique_comps = set()
     pf_unique_comps = set()
-    coll = db['pauling_file_min']
+    coll = db['pauling_file_mpmin']
     new_coll = db['pf_to_mp']
     new_coll.drop()
     mp_comps = mpr.query(criteria={}, properties=["snl_final.reduced_cell_formula_abc"])
@@ -120,10 +119,10 @@ if __name__ == '__main__':
         #     break
         pf_unique_comps.add(doc['metadata']['_structure']['reduced_cell_formula_abc'])
         if doc['metadata']['_structure']['reduced_cell_formula_abc'] not in mp_unique_comps:
-            new_coll.insert(doc)
+            new_coll.insert(doc_to_snl(doc).as_dict())
             # with open('PaulingFile_example.json', 'w') as outfile:
             #     json.dump(doc_to_snl(doc).as_dict(), outfile)
-    new_coll.create_index([('key', pymongo.ASCENDING)], unique=True)
+    new_coll.create_index([('about._pauling_file.key', pymongo.ASCENDING)], unique=True)
     print 'Number of PF unique comps = {}'.format(len(pf_unique_comps))
     new_comps = pf_unique_comps.difference(mp_unique_comps)
     print 'Number of new compositions in PF = {}'.format(len(new_comps))
