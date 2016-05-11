@@ -13,7 +13,7 @@ def create_mincoll():
     db[min_collname].drop()
     origcoll.aggregate([{'$match': {'structure': {'$exists': True}, 'metadata._structure.is_ordered': True,
                                     'metadata._structure.is_valid': True, 'errors': {
-            '$in': ['structural composition and refined/alphabetic formula do not match']}}},
+            '$nin': ['structural composition and refined/alphabetic formula do not match']}}},
                         {'$project': {'key': 1, 'metadata': 1, 'structure': 1, 'webpage_link': 1}},
                         {'$out': min_collname}])
     db[min_collname].create_index([('key', pymongo.ASCENDING)], unique=True)
