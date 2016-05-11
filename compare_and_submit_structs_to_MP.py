@@ -12,7 +12,8 @@ def create_mincoll():
     min_collname = 'pauling_file_mpmin'
     db[min_collname].drop()
     origcoll.aggregate([{'$match': {'structure': {'$exists': True}, 'metadata._structure.is_ordered': True,
-                                    'metadata._structure.is_valid': True}},
+                                    'metadata._structure.is_valid': True, 'errors': {
+            '$in': ['structural composition and refined/alphabetic formula do not match']}}},
                         {'$project': {'key': 1, 'metadata': 1, 'structure': 1, 'webpage_link': 1}},
                         {'$out': min_collname}])
     db[min_collname].create_index([('key', pymongo.ASCENDING)], unique=True)
@@ -100,6 +101,7 @@ def job_is_submittable(job):
 
 
 if __name__ == '__main__':
+    create_mincoll()
     mp_unique_comps = set()
     pf_unique_comps = set()
     coll = db['pauling_file_mpmin']
