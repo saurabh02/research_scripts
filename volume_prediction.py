@@ -7,7 +7,20 @@ import pickle
 mpr = MPRester()
 
 
-def get_bondlengths(structure_lst):
+def store_avg_bondlengths(filename, e_above_hull=0.05):
+    criteria = {'nelements': {'$in': [1]}}
+    mp_results = mpr.query(criteria=criteria, properties=['task_id', 'pretty_formula', 'structure', 'e_above_hull'])
+    mp_results_stable = []
+    for i in mp_results:
+        if i['e_above_hull'] < e_above_hull:
+            mp_results_stable.append(i['structure'])
+    bls = get_bondlengths(mp_results_stable)
+    avg_bls = get_avg_bondlengths(bls)
+    with open(filename, 'wb') as f:
+        pickle.dump(avg_bls, f, pickle.HIGHEST_PROTOCOL)
+
+
+def get_bondlengths(structure_lst, radius=4):
     bond_lengths = defaultdict(list)
     for struct in structure_lst:
         for site_idx, site in enumerate(struct.sites):
@@ -16,15 +29,12 @@ def get_bondlengths(structure_lst):
             # for ngbsite in voronoi_polyhedra:
                 # print structure.get_distance(site_idx, ngbsite)
                 # print ngbsite
-            sites_in_sphere = struct.get_sites_in_sphere(site.coords, r=4, include_index=True)
+            sites_in_sphere = struct.get_sites_in_sphere(site.coords, r=radius, include_index=True)
             for s in sites_in_sphere:
                 if s[1] == 0:
                     continue
                 bond = '-'.join(sorted([site.species_string, s[0].species_string]))
-                # print '{} = {}'.format(bond, s[1])
                 bond_lengths[bond].append(s[1])
-        # print bond_lengths
-        # print get_rmse(bond_lengths)
     return bond_lengths
 
 
@@ -62,23 +72,7 @@ def predict_volume(structure):
 
 
 if __name__ == '__main__':
-    # criteria = {'nelements': {'$in': [1,2]}}
-    # criteria = {'task_id': {'$in': ['mp-656887', 'mp-1703']}}
-    # criteria = {'nelements': {'$in': [1]}, 'elements': {'$in': ['Fe']}}
     '''
-    criteria = {'nelements': {'$in': [1]}}
-    mp_results = mpr.query(criteria=criteria,
-                           properties=['task_id', 'pretty_formula', 'structure', 'e_above_hull'])
-    mp_results_stable = []
-    mp_results_stablestructs = []
-    for i in mp_results:
-        if i['e_above_hull'] < 0.5:
-            mp_results_stable.append(i)
-            mp_results_stablestructs.append(i['structure'])
-    bl = get_bondlengths(mp_results_stablestructs)
-    avg_bl = get_avg_bondlengths(bl)
-    with open('element_avg_bl.pkl', 'wb') as f:
-        pickle.dump(avg_bl, f, pickle.HIGHEST_PROTOCOL)
     '''
     new_fe_struct = mpr.query(criteria={'task_id': 'mp-568345'},
                            properties=['task_id', 'pretty_formula', 'structure', 'e_above_hull'])[0]['structure']
