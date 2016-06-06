@@ -1,3 +1,4 @@
+import os
 from pymatgen import MPRester
 from collections import defaultdict
 from pymatgen.analysis.structure_analyzer import VoronoiCoordFinder
@@ -6,18 +7,8 @@ import pickle
 
 mpr = MPRester()
 
-
-def store_avg_bondlengths(filename, e_above_hull=0.05):
-    criteria = {'nelements': {'$in': [1]}}
-    mp_results = mpr.query(criteria=criteria, properties=['task_id', 'pretty_formula', 'structure', 'e_above_hull'])
-    mp_results_stable = []
-    for i in mp_results:
-        if i['e_above_hull'] < e_above_hull:
-            mp_results_stable.append(i['structure'])
-    bls = get_bondlengths(mp_results_stable)
-    avg_bls = get_avg_bondlengths(bls)
-    with open(filename, 'wb') as f:
-        pickle.dump(avg_bls, f, pickle.HIGHEST_PROTOCOL)
+module_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+data_dir = os.path.join(module_dir, 'data_bondlengths')
 
 
 def get_bondlengths(structure_lst, radius=4):
@@ -45,8 +36,21 @@ def get_avg_bondlengths(bondlengths):
     return avg_bondlengths
 
 
-def get_rmse(bond_lengths):
-    with open('element_avg_bl.pkl', 'rb') as f:
+def save_avg_bondlengths(nelements, e_above_hull=0.05):
+    criteria = {'nelements': {'$in': [nelements]}}
+    mp_results = mpr.query(criteria=criteria, properties=['task_id', 'pretty_formula', 'structure', 'e_above_hull'])
+    mp_results_stable = []
+    for i in mp_results:
+        if i['e_above_hull'] < e_above_hull:
+            mp_results_stable.append(i['structure'])
+    bls = get_bondlengths(mp_results_stable)
+    avg_bls = get_avg_bondlengths(bls)
+    with open(os.path.join(data_dir, 'nelements_' + str(nelements) + '_avgbls.pkl'), 'wb') as f:
+        pickle.dump(avg_bls, f, pickle.HIGHEST_PROTOCOL)
+
+
+def get_rmse(filename, bond_lengths):
+    with open(filename, 'rb') as f:
         avg_bls = pickle.load(f)
     rmse = {}
     for bond in bond_lengths:
@@ -72,13 +76,11 @@ def predict_volume(structure):
 
 
 if __name__ == '__main__':
-    '''
+    save_avg_bondlengths(3)
     '''
     new_fe_struct = mpr.query(criteria={'task_id': 'mp-568345'},
                            properties=['task_id', 'pretty_formula', 'structure', 'e_above_hull'])[0]['structure']
     print 'Starting volume = {}'.format(new_fe_struct.volume)
     print 'Predicted volume = {}'.format(predict_volume(new_fe_struct))
-    # for i in mp_results_stable:
-        # get_bond_lenghts_in_structure(i['structure'])
-        # bl = get_bondlengths(i['structure'])
+    '''
 
