@@ -119,21 +119,16 @@ class VolumePredictor(object):
             self.avg_bondlengths = pickle.load(f)
 
 
-def call_new(structure):
-    print 'Starting volume = {}'.format(structure.volume)
+if __name__ == '__main__':
+    mpid = 'mp-981249'
+    new_struct = mpr.get_structure_by_material_id(mpid)
+    starting_vol = new_struct.volume
+    print 'Starting volume for {} = {}'.format(new_struct.composition, starting_vol)
     pv = VolumePredictor()
-    # print 'New bls = {}'.format(pv.get_bondlengths(new_struct))
     # pv.fit(mp_structs, mp_vols)
     # pv.save_avg_bondlengths("nelements_2_avgbl_test.pkl")
-    pv.get_avg_bondlengths("nelements_2_avgbl_test.pkl")
-    a = pv.predict(structure)
-    print 'New Predicted volume = {} with RMSE = {}'.format(a[0], a[1])
-    # '''
-
-
-if __name__ == '__main__':
-    # save_avg_bondlengths(2)
-    mpid = 'mp-974747'
-    new_struct = mpr.get_structure_by_material_id(mpid)
-    call_new(new_struct)
+    pv.get_avg_bondlengths("nelements_2_avgbls.pkl")
+    a = pv.predict(new_struct)
+    percent_volume_change = ((a[0] - starting_vol)/starting_vol)*100
+    print 'Predicted volume = {} with RMSE = {} and a volume change of {}%'.format(a[0], a[1], percent_volume_change)
 
