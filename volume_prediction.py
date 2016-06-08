@@ -13,12 +13,21 @@ data_dir = os.path.join(module_dir, 'data_bondlengths')
 
 
 class VolumePredictor(object):
+    """
+    Class to predict the volume of a given structure, based on averages of bond lengths of given input structures.
+    """
 
     def __init__(self):
         self.bond_lengths = defaultdict(list)
         self.avg_bondlengths = {}
 
     def get_bondlengths(self, structure):
+        """
+        Get all bond lengths in a structure by bond type.
+
+        :param structure: pymatgen structure object
+        :return: (defaultdict(list)) with bond types in the format 'A-B' as keys, and bond lengths as values
+        """
         bondlengths = defaultdict(list)
         for site_idx, site in enumerate(structure.sites):
             try:
@@ -39,10 +48,11 @@ class VolumePredictor(object):
 
     def fit(self, structures, volumes):
         """
+        Given a set of input structures, it stores bond lengths in a defaultdict(list) and average bond lengths in a
+        dictionary by bond type (keys).
 
         :param structures: (list) list of pymatgen structure objects
         :param volumes: (list) corresponding list of volumes of structures
-        :return:
         """
         for struct in structures:
             struct_bls = self.get_bondlengths(struct)
@@ -54,9 +64,10 @@ class VolumePredictor(object):
 
     def get_rmse(self, structure_bls):
         """
+        Calculates root mean square error between bond lengths in a structure and the average expected bond lengths.
 
-        :param structure_bls:
-        :return:
+        :param structure_bls: defaultdict(list) of bond lengths as output by the function "get_bondlengths()"
+        :return: (float) root mean square error
         """
         rmse = 0
         for bond in structure_bls:
@@ -65,9 +76,12 @@ class VolumePredictor(object):
 
     def predict(self, structure):
         """
+        Predict volume of a given structure based on rmse against average bond lengths from a set of input structures.
+        Note: run this function after initializing the "self.avg_bondlengths" variable, through either of the functions
+        fit() or get_avg_bondlengths().
 
         :param structure: (structure) pymatgen structure object to predict the volume of
-        :return:
+        :return: (tuple) predited volume (float) and its rmse (float)
         """
         starting_volume = structure.volume
         predicted_volume = starting_volume
@@ -80,6 +94,25 @@ class VolumePredictor(object):
                 min_rmse = test_rmse
                 predicted_volume = test_volume
         return predicted_volume, min_rmse
+
+    def save_avg_bondlengths(self, filename):
+        """
+        Save the average bond lengths calculated by fit().
+
+        :param filename: name of file to store to
+        """
+        with open(os.path.join(data_dir, 'nelements_2_avgbls1.pkl'), 'w') as f:
+            pickle.dump(self.avg_bondlengths, f, pickle.HIGHEST_PROTOCOL)
+
+    def get_avg_bondlengths(self, filename):
+        """
+        Extract the saved average bond lengths and save them in the class variable "self.avg_bondlengths".
+
+        :param filename: name of file to extract average bond lengths from
+        :return:
+        """
+        with open(os.path.join(data_dir, 'nelements_2_avgbls1.pkl'), 'r') as f:
+            self.avg_bondlengths = pickle.load(f)
 
 
 def get_bondlengths(structure_lst):
@@ -149,10 +182,11 @@ def predict_volume(structure):
 
 if __name__ == '__main__':
     # save_avg_bondlengths(2)
-    new_fe_struct = mpr.get_structure_by_material_id('mp-134')
-    print 'Starting volume = {}'.format(new_fe_struct.volume)
-    print 'Predicted volume = {} with RMSE = {}'.format(predict_volume(new_fe_struct)[0], predict_volume(new_fe_struct)[1])
-    criteria = {'nelements': {'$lte': 1}}
+    new_struct = mpr.get_structure_by_material_id('mp-97')
+    print 'Starting volume = {}'.format(new_struct.volume)
+    pred_vol = predict_volume(new_struct)
+    print 'Predicted volume = {} with RMSE = {}'.format(pred_vol[0], pred_vol[1])
+    criteria = {'nelements': {'$lte': 2}}
     mp_results = mpr.query(criteria=criteria, properties=['task_id', 'e_above_hull', 'structure'])
     mp_structs = []
     mp_vols = []
@@ -162,7 +196,8 @@ if __name__ == '__main__':
             mp_vols.append(i['structure'].volume)
     pv = VolumePredictor()
     pv.fit(mp_structs, mp_vols)
-    a = pv.predict(new_fe_struct)
-    print 'Predicted volume = {} with RMSE = {}'.format(a[0], a[1])
+    pv.save_avg_bondlengths()
+    # a = pv.predict(new_struct)
+    # print 'Predicted volume = {} with RMSE = {}'.format(a[0], a[1])
 
 
