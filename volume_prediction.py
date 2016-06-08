@@ -101,7 +101,7 @@ class VolumePredictor(object):
 
         :param filename: name of file to store to
         """
-        with open(os.path.join(data_dir, 'nelements_2_avgbls1.pkl'), 'w') as f:
+        with open(os.path.join(data_dir, filename), 'w') as f:
             pickle.dump(self.avg_bondlengths, f, pickle.HIGHEST_PROTOCOL)
 
     def get_avg_bondlengths(self, filename):
@@ -111,7 +111,7 @@ class VolumePredictor(object):
         :param filename: name of file to extract average bond lengths from
         :return:
         """
-        with open(os.path.join(data_dir, 'nelements_2_avgbls1.pkl'), 'r') as f:
+        with open(os.path.join(data_dir, filename), 'r') as f:
             self.avg_bondlengths = pickle.load(f)
 
 
